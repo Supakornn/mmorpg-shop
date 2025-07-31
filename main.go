@@ -6,11 +6,11 @@ import (
 	"os"
 
 	"github.com/Supakornn/mmorpg-shop/config"
+	"github.com/Supakornn/mmorpg-shop/pkg/database"
 )
 
 func main() {
 	ctx := context.Background()
-	_ = ctx
 
 	// Initialize Config
 	cfg := config.LoadConfig(func() string {
@@ -21,6 +21,11 @@ func main() {
 		return os.Args[1]
 	}())
 
-	log.Println(cfg)
-
+	// Database Connection
+	db := database.DbConn(ctx, &cfg)
+	defer func() {
+		if err := db.Disconnect(ctx); err != nil {
+			log.Fatalf("Error: cannot disconnect from database: %s", err.Error())
+		}
+	}()
 }
