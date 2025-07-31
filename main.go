@@ -23,5 +23,9 @@ func main() {
 
 	// Database Connection
 	db := database.DbConn(ctx, &cfg)
-	defer db.Disconnect(ctx)
+	defer func() {
+		if err := db.Disconnect(ctx); err != nil {
+			log.Fatalf("Error: cannot disconnect from database: %s", err.Error())
+		}
+	}()
 }
