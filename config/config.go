@@ -34,7 +34,6 @@ type (
 		ApiSecretKey     string
 		AccessDuration   int64
 		RefreshDuration  int64
-		ApiDuration      int64
 	}
 
 	Kafka struct {
@@ -45,7 +44,7 @@ type (
 
 	Grpc struct {
 		AuthUrl      string
-		PlauerUrl    string
+		PlayerUrl    string
 		ItemUrl      string
 		InventoryUrl string
 		PaymentUrl   string
@@ -97,7 +96,7 @@ func LoadConfig(path string) Config {
 		},
 		Grpc: Grpc{
 			AuthUrl:      os.Getenv("GRPC_AUTH_URL"),
-			PlauerUrl:    os.Getenv("GRPC_PLAYER_URL"),
+			PlayerUrl:    os.Getenv("GRPC_PLAYER_URL"),
 			ItemUrl:      os.Getenv("GRPC_ITEM_URL"),
 			InventoryUrl: os.Getenv("GRPC_INVENTORY_URL"),
 			PaymentUrl:   os.Getenv("GRPC_PAYMENT_URL"),
