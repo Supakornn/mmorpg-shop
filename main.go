@@ -7,6 +7,7 @@ import (
 
 	"github.com/Supakornn/mmorpg-shop/config"
 	"github.com/Supakornn/mmorpg-shop/pkg/database"
+	"github.com/Supakornn/mmorpg-shop/server"
 )
 
 func main() {
@@ -28,4 +29,7 @@ func main() {
 			log.Fatalf("Error: cannot disconnect from database: %s", err.Error())
 		}
 	}()
+
+	// Start Server
+	server.Start(ctx, &cfg, db)
 }
