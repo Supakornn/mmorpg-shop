@@ -7,7 +7,8 @@ import (
 
 type (
 	AuthHttpHandlerService interface{}
-	authHttpHandler        struct {
+
+	authHttpHandler struct {
 		cfg         *config.Config
 		authUsecase authUsecase.AuthUsecaseService
 	}

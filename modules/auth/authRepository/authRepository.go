@@ -8,7 +8,8 @@ import (
 
 type (
 	AuthRepositoryService interface{}
-	authRepository        struct {
+
+	authRepository struct {
 		db *mongo.Client
 	}
 )

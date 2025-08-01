@@ -4,7 +4,8 @@ import "github.com/Supakornn/mmorpg-shop/modules/auth/authRepository"
 
 type (
 	AuthUsecaseService interface{}
-	authUsecase        struct {
+
+	authUsecase struct {
 		authRepository authRepository.AuthRepositoryService
 	}
 )
