@@ -1,0 +1,27 @@
+// Protobuf Version
+syntax = "proto3";
+
+// PackageName: github.com/Supakornn/mmorpg-shop
+option go_package = "github.com/Supakornn/mmorpg-shop";
+
+//  Structures
+message FindItemsInIdsReq {
+    repeated int32 ids = 1;
+}
+
+message FindItemsInIdsRes {
+    repeated Item items = 1;
+}
+
+message Item {
+    string id = 1;
+    string title = 2;
+    double price = 3;
+    string image_url = 4;
+    int32 damage = 5;
+}
+
+// Methods
+service ItemGrpcService {
+    rpc FindItemsInIds(FindItemsInIdsReq) returns (FindItemsInIdsRes);
+}
