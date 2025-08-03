@@ -1,0 +1,26 @@
+// Protobuf Version
+syntax = "proto3";
+
+// PackageName: github.com/Supakornn/mmorpg-shop
+option go_package = "github.com/Supakornn/mmorpg-shop";
+
+//  Structures
+message CredentialSearchReq {
+    string accessToken = 1;
+}
+
+message CredentialSearchRes {
+    bool isValid = 1;
+}
+
+message RolesCountReq {}
+
+message RolesCountRes {
+    int64 count = 1;
+}
+
+// Methods
+service AuthGrpcService {
+    rpc CredentialSearch(CredentialSearchReq) returns (CredentialSearchRes);
+    rpc RolesCount(RolesCountReq) returns (RolesCountRes);
+}
