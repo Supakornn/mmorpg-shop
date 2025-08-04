@@ -1,0 +1,20 @@
+// Protobuf Version
+syntax = "proto3";
+
+// PackageName: github.com/Supakornn/mmorpg-shop
+option go_package = "github.com/Supakornn/mmorpg-shop";
+
+//  Structures
+message IsAvailableToSellReq {
+    string playerId = 1;
+    int32 itemId = 2;
+}
+
+message IsAvailableToSellRes {
+    bool isAvailable = 1;
+}
+
+// Methods
+service InventoryGrpcService {
+    rpc IsAvailableToSell(IsAvailableToSellReq) returns (IsAvailableToSellRes);
+}
