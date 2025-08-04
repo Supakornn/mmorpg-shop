@@ -2,8 +2,10 @@ package server
 
 import (
 	"github.com/Supakornn/mmorpg-shop/modules/player/playerHandler"
+	playerPb "github.com/Supakornn/mmorpg-shop/modules/player/playerPb"
 	"github.com/Supakornn/mmorpg-shop/modules/player/playerRepository"
 	"github.com/Supakornn/mmorpg-shop/modules/player/playerUsecase"
+	"github.com/Supakornn/mmorpg-shop/pkg/grpcconn"
 )
 
 func (s *server) playerService() {
@@ -12,6 +14,16 @@ func (s *server) playerService() {
 	httpHandler := playerHandler.NewPlayerHttpHandler(s.cfg, usecase)
 	grpcHandler := playerHandler.NewPlayerGrpcHandler(usecase)
 	queueHandler := playerHandler.NewPlayerQueueHandler(s.cfg, usecase)
+
+	// gRPC
+	go func() {
+		grpcServer, lis := grpcconn.NewGrpcServer(&s.cfg.Jwt, s.cfg.Grpc.PlayerUrl)
+
+		playerPb.RegisterPlayerGrpcServiceServer(grpcServer, grpcHandler)
+
+		s.app.Logger.Infof("Player gRPC server is running on %s", s.cfg.Grpc.PlayerUrl)
+		grpcServer.Serve(lis)
+	}()
 
 	_ = httpHandler
 	_ = grpcHandler
