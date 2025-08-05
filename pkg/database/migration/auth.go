@@ -27,6 +27,7 @@ func AuthMigrate(pctx context.Context, cfg *config.Config) {
 		{Keys: bson.D{{Key: "player_id", Value: 1}}},
 		{Keys: bson.D{{Key: "refresh_token", Value: 1}}},
 	})
+
 	for _, index := range indexs {
 		log.Printf("Index: %s created", index)
 	}
@@ -37,6 +38,7 @@ func AuthMigrate(pctx context.Context, cfg *config.Config) {
 		{Keys: bson.D{{Key: "_id", Value: 1}}},
 		{Keys: bson.D{{Key: "code", Value: 1}}},
 	})
+
 	for _, index := range indexs {
 		log.Printf("Index: %s created", index)
 	}
@@ -61,9 +63,11 @@ func AuthMigrate(pctx context.Context, cfg *config.Config) {
 
 		return docs
 	}()
+
 	results, err := col.InsertMany(pctx, documents)
 	if err != nil {
 		panic(err)
 	}
+
 	log.Println("Migrate auth completed", results)
 }
