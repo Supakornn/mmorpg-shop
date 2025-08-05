@@ -3,18 +3,18 @@ package player
 import (
 	"time"
 
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
 type (
 	Player struct {
-		Id          primitive.ObjectID `json:"_id" bson:"_id,omitempty"`
-		Email       string             `json:"email" bson:"email"`
-		Username    string             `json:"username" bson:"username"`
-		Password    string             `json:"password" bson:"password"`
-		CreatedAt   time.Time          `json:"created_at" bson:"created_at"`
-		UpdatedAt   time.Time          `json:"updated_at" bson:"updated_at"`
-		PlayerRoles []PlayerRole       `bson:"player_roles"`
+		Id          bson.ObjectID `json:"_id" bson:"_id,omitempty"`
+		Email       string        `json:"email" bson:"email"`
+		Username    string        `json:"username" bson:"username"`
+		Password    string        `json:"password" bson:"password"`
+		CreatedAt   time.Time     `json:"created_at" bson:"created_at"`
+		UpdatedAt   time.Time     `json:"updated_at" bson:"updated_at"`
+		PlayerRoles []PlayerRole  `bson:"player_roles"`
 	}
 
 	PlayerRole struct {
@@ -23,12 +23,12 @@ type (
 	}
 
 	PlayerProfileBson struct {
-		Id        primitive.ObjectID `json:"_id" bson:"_id,omitempty"`
-		PlayerId  string             `json:"player_id" bson:"player_id"`
-		Email     string             `json:"email" bson:"email"`
-		Username  string             `json:"username" bson:"username"`
-		CreatedAt time.Time          `json:"created_at" bson:"created_at"`
-		UpdatedAt time.Time          `json:"updated_at" bson:"updated_at"`
+		Id        bson.ObjectID `json:"_id" bson:"_id,omitempty"`
+		PlayerId  string        `json:"player_id" bson:"player_id"`
+		Email     string        `json:"email" bson:"email"`
+		Username  string        `json:"username" bson:"username"`
+		CreatedAt time.Time     `json:"created_at" bson:"created_at"`
+		UpdatedAt time.Time     `json:"updated_at" bson:"updated_at"`
 	}
 
 	PlayerSavingAccount struct {

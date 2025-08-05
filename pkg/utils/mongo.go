@@ -1,10 +1,10 @@
 package utils
 
 import (
-	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/v2/bson"
 )
 
-func ConvertToObject(id string) primitive.ObjectID {
-	objectId, _ := primitive.ObjectIDFromHex(id)
+func ConvertToObject(id string) bson.ObjectID {
+	objectId, _ := bson.ObjectIDFromHex(id)
 	return objectId
 }
