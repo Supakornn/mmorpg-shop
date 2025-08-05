@@ -31,5 +31,7 @@ func main() {
 		migration.ItemMigrate(ctx, &cfg)
 	case "inventory":
 		migration.InventoryMigrate(ctx, &cfg)
+	case "payment":
+		migration.PaymentMigrate(ctx, &cfg)
 	}
 }
