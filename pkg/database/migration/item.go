@@ -29,7 +29,7 @@ func ItemMigrate(pctx context.Context, cfg *config.Config) {
 	})
 
 	for _, index := range indexs {
-		log.Printf("Index: %s created", index)
+		log.Printf("index: %s created", index)
 	}
 
 	// Items Datas

@@ -26,7 +26,7 @@ func InventoryMigrate(pctx context.Context, cfg *config.Config) {
 	})
 
 	for _, index := range indexs {
-		log.Printf("Index: %s created", index)
+		log.Printf("index: %s created", index)
 	}
 
 	col = db.Collection("player_inventory_queue")

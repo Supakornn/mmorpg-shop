@@ -21,7 +21,7 @@ func ConvertStringToTime(t string) time.Time {
 	layout := "2006-01-02T15:04:05.999 -0700 MST"
 	result, err := time.Parse(layout, t)
 	if err != nil {
-		log.Printf("Error: convert string to time failed: %v", err)
+		log.Printf("error: convert string to time failed: %v", err)
 	}
 
 	loc, _ := time.LoadLocation("Asia/Bangkok")

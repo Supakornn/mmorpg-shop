@@ -54,8 +54,8 @@ func NewGrpcClient(host string) (GrpcClientFactoryHandler, error) {
 
 	clientConn, err := grpc.NewClient(host, opts...)
 	if err != nil {
-		log.Printf("Error: Failed to connect to GRPC: %v", err)
-		return nil, errors.New("Error: Failed to connect to GRPC")
+		log.Printf("error: failed to connect to grpc: %v", err)
+		return nil, errors.New("error: failed to connect to grpc")
 	}
 
 	return &grpcClientFactory{
@@ -70,7 +70,7 @@ func NewGrpcServer(cfg *config.Jwt, host string) (*grpc.Server, net.Listener) {
 
 	lis, err := net.Listen("tcp", host)
 	if err != nil {
-		log.Fatalf("Error: Failed to listen GRPC on %s", host)
+		log.Fatalf("error: failed to listen grpc on %s", host)
 	}
 
 	return grpcServer, lis

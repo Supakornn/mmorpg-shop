@@ -34,25 +34,25 @@ func newMiddleware(cfg *config.Config) middlewareHandler.MiddlewareHandlerServic
 }
 
 func (s *server) graceFullShutdown(pctx context.Context, quit <-chan os.Signal) {
-	log.Printf("Start service: %s", s.cfg.App.Name)
+	log.Printf("start service: %s", s.cfg.App.Name)
 
 	<-quit
 
-	log.Printf("Shutting down service: %s", s.cfg.App.Name)
+	log.Printf("shutting down service: %s", s.cfg.App.Name)
 
 	ctx, cancel := context.WithTimeout(pctx, 10*time.Second)
 	defer cancel()
 
 	if err := s.app.Shutdown(ctx); err != nil {
-		s.app.Logger.Fatalf("Error: %s", err.Error())
+		s.app.Logger.Fatalf("error: %s", err.Error())
 	}
 
-	log.Printf("Service: %s shutdown complete", s.cfg.App.Name)
+	log.Printf("service: %s shutdown complete", s.cfg.App.Name)
 }
 
 func (s *server) httpListening() {
 	if err := s.app.Start(s.cfg.App.Url); err != nil && err != http.ErrServerClosed {
-		s.app.Logger.Fatalf("Error: %s", err.Error())
+		s.app.Logger.Fatalf("error: %s", err.Error())
 	}
 }
 
@@ -68,7 +68,7 @@ func Start(pctx context.Context, cfg *config.Config, db *mongo.Client) {
 	// Request Timeout
 	s.app.Use(middleware.TimeoutWithConfig(middleware.TimeoutConfig{
 		Skipper:      middleware.DefaultSkipper,
-		ErrorMessage: "Error: Request Timeout",
+		ErrorMessage: "error: request timeout",
 		Timeout:      30 * time.Second,
 	}))
 

@@ -16,7 +16,7 @@ func main() {
 	// Initialize Config
 	cfg := config.LoadConfig(func() string {
 		if len(os.Args) < 2 {
-			log.Fatal("Error: Please provide a path to the .env file")
+			log.Fatal("error: please provide a path to the .env file")
 		}
 
 		return os.Args[1]

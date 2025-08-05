@@ -29,7 +29,7 @@ func PlayerMigrate(pctx context.Context, cfg *config.Config) {
 	})
 
 	for _, index := range indexs {
-		log.Printf("Index: %s created", index)
+		log.Printf("index: %s created", index)
 	}
 
 	// Players
@@ -40,7 +40,7 @@ func PlayerMigrate(pctx context.Context, cfg *config.Config) {
 	})
 
 	for _, index := range indexs {
-		log.Printf("Index: %s created", index)
+		log.Printf("index: %s created", index)
 	}
 
 	// Players Datas
@@ -116,7 +116,7 @@ func PlayerMigrate(pctx context.Context, cfg *config.Config) {
 	if err != nil {
 		panic(err)
 	}
-	log.Println("Migrate player completed", results)
+	log.Println("migrate player completed", results)
 
 	// Player Transactions Data
 	PlayerTransactions := make([]any, 0)
@@ -133,7 +133,7 @@ func PlayerMigrate(pctx context.Context, cfg *config.Config) {
 	if err != nil {
 		panic(err)
 	}
-	log.Println("Migrate player transactions completed", results)
+	log.Println("migrate player transactions completed", results)
 
 	// Player Transactions Queue
 	col = db.Collection("player_transactions_queue")
@@ -142,5 +142,5 @@ func PlayerMigrate(pctx context.Context, cfg *config.Config) {
 		panic(err)
 	}
 
-	log.Println("Migrate player transactions queue completed", result)
+	log.Println("migrate player transactions queue completed", result)
 }

@@ -58,7 +58,7 @@ type (
 
 func LoadConfig(path string) Config {
 	if err := godotenv.Load(path); err != nil {
-		log.Fatal("Error: Failed to load .env file")
+		log.Fatal("error: failed to load .env file")
 	}
 
 	return Config{
@@ -77,14 +77,14 @@ func LoadConfig(path string) Config {
 			AccessDuration: func() int64 {
 				result, err := strconv.ParseInt(os.Getenv("JWT_ACCESS_DURATION"), 10, 64)
 				if err != nil {
-					log.Fatal("Error: Failed to load access duration")
+					log.Fatal("error: failed to load access duration")
 				}
 				return result
 			}(),
 			RefreshDuration: func() int64 {
 				result, err := strconv.ParseInt(os.Getenv("JWT_REFRESH_DURATION"), 10, 64)
 				if err != nil {
-					log.Fatal("Error: Failed to load refresh duration")
+					log.Fatal("error: failed to load refresh duration")
 				}
 				return result
 			}(),

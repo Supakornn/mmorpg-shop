@@ -46,7 +46,7 @@ func (r *playerRepository) IsUniquePlayer(pctx context.Context, email, username 
 		}},
 	).Decode(player); err != nil {
 		if err == mongo.ErrNoDocuments {
-			log.Printf("Error: IsUniquePlayer: %v", err.Error())
+			log.Printf("error: is unique player: %v", err.Error())
 			return true
 		}
 	}
@@ -62,7 +62,7 @@ func (r *playerRepository) InsertOnePlayer(pctx context.Context, req *player.Pla
 
 	playerId, err := col.InsertOne(ctx, req)
 	if err != nil {
-		log.Printf("Error: InsertOnePlayer: %v", err.Error())
+		log.Printf("error: insert one player: %v", err.Error())
 		return bson.NilObjectID, errors.New("error: insert one player failed")
 	}
 
