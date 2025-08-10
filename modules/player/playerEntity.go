@@ -33,7 +33,7 @@ type (
 
 	PlayerSavingAccount struct {
 		PlayerId string  `json:"player_id" bson:"player_id"`
-		Balace   float64 `json:"balance" bson:"balance"`
+		Balance  float64 `json:"balance" bson:"balance"`
 	}
 
 	PlayerTransaction struct {

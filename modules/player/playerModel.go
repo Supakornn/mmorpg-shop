@@ -23,7 +23,7 @@ type (
 	}
 
 	CreatePlayerTransactionReq struct {
-		PlayerId string `json:"player_id" validate:"required,max=64"`
-		Amount   int    `json:"amount" validate:"required"`
+		PlayerId string  `json:"player_id" validate:"required,max=64"`
+		Amount   float64 `json:"amount" validate:"required"`
 	}
 )

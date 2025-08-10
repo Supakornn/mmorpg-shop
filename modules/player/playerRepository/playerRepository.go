@@ -18,6 +18,8 @@ type (
 		IsUniquePlayer(pctx context.Context, email, username string) bool
 		InsertOnePlayer(pctx context.Context, req *player.Player) (bson.ObjectID, error)
 		FindOnePlayerProfile(pctx context.Context, playerId string) (*player.PlayerProfileBson, error)
+		InsertOnePlayerTransaction(pctx context.Context, req *player.PlayerTransaction) error
+		GetPlayerSavingAccount(pctx context.Context, playerId string) (*player.PlayerSavingAccount, error)
 	}
 
 	playerRepository struct {
@@ -99,6 +101,71 @@ func (r *playerRepository) FindOnePlayerProfile(pctx context.Context, playerId s
 	).Decode(result); err != nil {
 		log.Printf("error: find one player profile: %v", err.Error())
 		return nil, errors.New("error: player not found")
+	}
+
+	return result, nil
+}
+
+func (r *playerRepository) InsertOnePlayerTransaction(pctx context.Context, req *player.PlayerTransaction) error {
+	ctx, cancel := context.WithTimeout(pctx, 10*time.Second)
+	defer cancel()
+
+	db := r.playerDbConn(ctx)
+	col := db.Collection("player_transactions")
+
+	result, err := col.InsertOne(ctx, req)
+	if err != nil {
+		log.Printf("error: insert one player transaction: %v", err.Error())
+		return errors.New("error: insert one player transaction failed")
+	}
+
+	log.Printf("info: insert one player transaction: %v", result.InsertedID)
+
+	return nil
+}
+
+func (r *playerRepository) GetPlayerSavingAccount(pctx context.Context, playerId string) (*player.PlayerSavingAccount, error) {
+	ctx, cancel := context.WithTimeout(pctx, 10*time.Second)
+	defer cancel()
+
+	db := r.playerDbConn(ctx)
+	col := db.Collection("player_transactions")
+
+	filter := bson.A{
+		bson.D{{Key: "$match", Value: bson.D{{Key: "player_id", Value: playerId}}}},
+		bson.D{
+			{Key: "$group", Value: bson.D{
+				{Key: "_id", Value: "$player_id"},
+				{Key: "balance", Value: bson.D{{Key: "$sum", Value: "$amount"}}},
+			}},
+		},
+		bson.D{
+			{Key: "$project", Value: bson.D{
+				{Key: "player_id", Value: "$_id"},
+				{Key: "_id", Value: 0},
+				{Key: "balance", Value: 1},
+			}},
+		},
+	}
+
+	cursor, err := col.Aggregate(ctx, filter)
+	if err != nil {
+		log.Printf("error: get player saving account: %v", err.Error())
+		return nil, errors.New("error: get player saving account failed")
+	}
+	defer cursor.Close(ctx)
+
+	result := new(player.PlayerSavingAccount)
+
+	if cursor.Next(ctx) {
+		if err := cursor.Decode(result); err != nil {
+			log.Printf("error: decode player saving account: %v", err.Error())
+			return nil, errors.New("error: decode player saving account failed")
+		}
+	} else {
+		log.Printf("info: no transactions found for player: %v", playerId)
+		result.PlayerId = playerId
+		result.Balance = 0
 	}
 
 	return result, nil

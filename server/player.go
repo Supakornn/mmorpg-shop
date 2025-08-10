@@ -31,7 +31,9 @@ func (s *server) playerService() {
 	// Routes
 	player := s.app.Group("/player_v1")
 
-	player.GET("", s.healthCheckService)                               // Health check
-	player.POST("/player/register", httpHandler.CreatePlayer)          // Create Player
-	player.GET("/player/:player_id", httpHandler.FindOnePlayerProfile) // Find One Player Profile
+	player.GET("", s.healthCheckService)                                                // Health check
+	player.POST("/player/register", httpHandler.CreatePlayer)                           // Create Player
+	player.GET("/player/:player_id", httpHandler.FindOnePlayerProfile)                  // Find One Player Profile
+	player.POST("/player/add-money", httpHandler.AddPlayerMoney)                        // Add Player Money
+	player.GET("/player/saving-account/:player_id", httpHandler.GetPlayerSavingAccount) // Get Player Saving Account
 }

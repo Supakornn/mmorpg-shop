@@ -18,6 +18,8 @@ type (
 	PlayerHttpHandlerService interface {
 		CreatePlayer(c echo.Context) error
 		FindOnePlayerProfile(c echo.Context) error
+		AddPlayerMoney(c echo.Context) error
+		GetPlayerSavingAccount(c echo.Context) error
 	}
 
 	playerHttpHandler struct {
@@ -62,6 +64,42 @@ func (h *playerHttpHandler) FindOnePlayerProfile(c echo.Context) error {
 	playerId := strings.TrimPrefix(decodedParam, "player:")
 
 	res, err := h.playerUsecase.FindOnePlayerProfile(ctx, playerId)
+	if err != nil {
+		return response.ErrResponse(c, http.StatusBadRequest, err.Error())
+	}
+
+	return response.SuccessResponse(c, http.StatusOK, res)
+}
+
+func (h *playerHttpHandler) AddPlayerMoney(c echo.Context) error {
+	ctx := context.Background()
+	wrapper := request.ContextWrapper(c)
+
+	req := new(player.CreatePlayerTransactionReq)
+
+	if err := wrapper.Bind(req); err != nil {
+		return response.ErrResponse(c, http.StatusBadRequest, err.Error())
+	}
+
+	res, err := h.playerUsecase.AddPlayerMoney(ctx, req)
+	if err != nil {
+		return response.ErrResponse(c, http.StatusBadRequest, err.Error())
+	}
+
+	return response.SuccessResponse(c, http.StatusCreated, res)
+}
+
+func (h *playerHttpHandler) GetPlayerSavingAccount(c echo.Context) error {
+	ctx := context.Background()
+
+	originalParam := c.Param("player_id")
+
+	playerId, err := url.QueryUnescape(originalParam)
+	if err != nil {
+		return response.ErrResponse(c, http.StatusBadRequest, "invalid parameter format")
+	}
+
+	res, err := h.playerUsecase.GetPlayerSavingAccount(ctx, playerId)
 	if err != nil {
 		return response.ErrResponse(c, http.StatusBadRequest, err.Error())
 	}
