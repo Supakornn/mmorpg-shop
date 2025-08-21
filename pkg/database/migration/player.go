@@ -10,6 +10,7 @@ import (
 	"github.com/Supakornn/mmorpg-shop/pkg/utils"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
+	"golang.org/x/crypto/bcrypt"
 )
 
 func PlayerDbConn(pctx context.Context, cfg *config.Config) *mongo.Database {
@@ -47,8 +48,11 @@ func PlayerMigrate(pctx context.Context, cfg *config.Config) {
 	documents := func() []any {
 		players := []*player.Player{
 			{
-				Email:    "player1@supakorn.info",
-				Password: "123456",
+				Email: "player1@supakorn.info",
+				Password: func() string {
+					hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("123456"), bcrypt.DefaultCost)
+					return string(hashedPassword)
+				}(),
 				Username: "Player1",
 				PlayerRoles: []player.PlayerRole{
 					{
@@ -60,8 +64,11 @@ func PlayerMigrate(pctx context.Context, cfg *config.Config) {
 				UpdatedAt: utils.LocalTime(),
 			},
 			{
-				Email:    "player2@supakorn.info",
-				Password: "123456",
+				Email: "player2@supakorn.info",
+				Password: func() string {
+					hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("123456"), bcrypt.DefaultCost)
+					return string(hashedPassword)
+				}(),
 				Username: "Player2",
 				PlayerRoles: []player.PlayerRole{
 					{
@@ -73,8 +80,11 @@ func PlayerMigrate(pctx context.Context, cfg *config.Config) {
 				UpdatedAt: utils.LocalTime(),
 			},
 			{
-				Email:    "player3@supakorn.info",
-				Password: "123456",
+				Email: "player3@supakorn.info",
+				Password: func() string {
+					hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("123456"), bcrypt.DefaultCost)
+					return string(hashedPassword)
+				}(),
 				Username: "Player3",
 				PlayerRoles: []player.PlayerRole{
 					{
@@ -86,8 +96,11 @@ func PlayerMigrate(pctx context.Context, cfg *config.Config) {
 				UpdatedAt: utils.LocalTime(),
 			},
 			{
-				Email:    "admin1@supakorn.info",
-				Password: "123456",
+				Email: "admin1@supakorn.info",
+				Password: func() string {
+					hashedPassword, _ := bcrypt.GenerateFromPassword([]byte("123456"), bcrypt.DefaultCost)
+					return string(hashedPassword)
+				}(),
 				Username: "Admin1",
 				PlayerRoles: []player.PlayerRole{
 					{

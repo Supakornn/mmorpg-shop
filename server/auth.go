@@ -27,8 +27,9 @@ func (s *server) authService() {
 	_ = httpHandler
 	_ = grpcHandler
 
+	// Routes
 	auth := s.app.Group("/auth_v1")
 
-	// Health check
-	auth.GET("", s.healthCheckService)
+	auth.GET("", s.healthCheckService)          // Health check
+	auth.POST("/auth/login", httpHandler.Login) // Login
 }
