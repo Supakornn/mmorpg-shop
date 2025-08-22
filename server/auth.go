@@ -30,6 +30,7 @@ func (s *server) authService() {
 	// Routes
 	auth := s.app.Group("/auth_v1")
 
-	auth.GET("", s.healthCheckService)          // Health check
-	auth.POST("/auth/login", httpHandler.Login) // Login
+	auth.GET("", s.healthCheckService)                         // Health check
+	auth.POST("/auth/login", httpHandler.Login)                // Login
+	auth.POST("/auth/refresh-token", httpHandler.RefreshToken) // Refresh token
 }

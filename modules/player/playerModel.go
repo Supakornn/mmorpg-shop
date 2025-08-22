@@ -4,7 +4,7 @@ import "time"
 
 type (
 	PlayerProfile struct {
-		Id        string    `json:"id"`
+		Id        string    `json:"_id"`
 		Email     string    `json:"email"`
 		Username  string    `json:"username"`
 		CreatedAt time.Time `json:"created_at"`
@@ -12,7 +12,7 @@ type (
 	}
 
 	PlayerClaims struct {
-		Id       string `json:"id"`
+		Id       string `json:"_id"`
 		RoleCode int    `json:"role_code"`
 	}
 

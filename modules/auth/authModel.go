@@ -13,6 +13,7 @@ type (
 	}
 
 	RefreshTokenReq struct {
+		CredentialId string `json:"credential_id" form:"credential_id" validate:"required,max=64"`
 		RefreshToken string `json:"refresh_token" form:"refresh_token" validate:"required,max=500"`
 	}
 
@@ -23,7 +24,7 @@ type (
 
 	ProfileIntercepter struct {
 		*player.PlayerProfile
-		Credential *Credential `json:"credential"`
+		Credential *CredentialRes `json:"credential"`
 	}
 
 	CredentialRes struct {

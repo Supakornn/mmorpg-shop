@@ -20,6 +20,7 @@ type (
 		AddPlayerMoney(pctx context.Context, req *player.CreatePlayerTransactionReq) (*player.PlayerSavingAccount, error)
 		GetPlayerSavingAccount(pctx context.Context, playerId string) (*player.PlayerSavingAccount, error)
 		FindOnePlayerCredential(pctx context.Context, email string, password string) (*playerPb.PlayerProfile, error)
+		FindOnePlayerProfileToRefresh(pctx context.Context, playerId string) (*playerPb.PlayerProfile, error)
 	}
 
 	playerUsecase struct {
@@ -124,6 +125,29 @@ func (u *playerUsecase) FindOnePlayerCredential(pctx context.Context, email stri
 	for _, v := range result.PlayerRoles {
 		roleCode = v.RoleCode
 	}
+
+	return &playerPb.PlayerProfile{
+		Id:        result.Id.Hex(),
+		Email:     result.Email,
+		Username:  result.Username,
+		RoleCode:  int32(roleCode),
+		CreatedAt: result.CreatedAt.In(loc).String(),
+		UpdatedAt: result.UpdatedAt.In(loc).String(),
+	}, nil
+}
+
+func (u *playerUsecase) FindOnePlayerProfileToRefresh(pctx context.Context, playerId string) (*playerPb.PlayerProfile, error) {
+	result, err := u.playerRepository.FindOnePlayerProfileToRefresh(pctx, playerId)
+	if err != nil {
+		return nil, err
+	}
+
+	roleCode := 0
+	for _, v := range result.PlayerRoles {
+		roleCode = v.RoleCode
+	}
+
+	loc, _ := time.LoadLocation("Asia/Bangkok")
 
 	return &playerPb.PlayerProfile{
 		Id:        result.Id.Hex(),

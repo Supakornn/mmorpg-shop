@@ -19,6 +19,8 @@ type (
 		InsertOneCredential(pctx context.Context, req *auth.Credential) (bson.ObjectID, error)
 		CredentialSearch(pctx context.Context, grpcUrl string, req *playerPb.CredentialSearchReq) (*playerPb.PlayerProfile, error)
 		FindOnePlayerCredential(pctx context.Context, credentialId string) (*auth.Credential, error)
+		FindOnePlayerProfileToRefresh(pctx context.Context, grpcUrl string, req *playerPb.FindOnePlayerProfileToRefreshReq) (*playerPb.PlayerProfile, error)
+		UpdateOnePlayerCredential(pctx context.Context, credentialId string, req *auth.UpdateRefreshTokenReq) error
 	}
 
 	authRepository struct {
@@ -40,13 +42,13 @@ func (r *authRepository) CredentialSearch(pctx context.Context, grpcUrl string, 
 
 	conn, err := grpcconn.NewGrpcClient(grpcUrl)
 	if err != nil {
-		log.Printf("error: grpc conn failed: %v", err)
+		log.Printf("error: grpc conn failed: %v", err.Error())
 		return nil, errors.New("error: grpc conn failed")
 	}
 
 	result, err := conn.Player().CredentialSearch(ctx, req)
 	if err != nil {
-		log.Printf("error: credential search failed: %v", err)
+		log.Printf("error: credential search failed: %v", err.Error())
 		return nil, errors.New("error: email or password is incorrect")
 	}
 
@@ -79,9 +81,53 @@ func (r *authRepository) FindOnePlayerCredential(pctx context.Context, credentia
 	result := new(auth.Credential)
 
 	if err := col.FindOne(ctx, bson.M{"_id": utils.ConvertToObjectId(credentialId)}).Decode(result); err != nil {
-		log.Printf("error: find one credential failed: %v", err)
+		log.Printf("error: find one credential failed: %v", err.Error())
 		return nil, errors.New("error: find one credential failed")
 	}
 
 	return result, nil
+}
+
+func (r *authRepository) FindOnePlayerProfileToRefresh(pctx context.Context, grpcUrl string, req *playerPb.FindOnePlayerProfileToRefreshReq) (*playerPb.PlayerProfile, error) {
+	ctx, cancel := context.WithTimeout(pctx, 30*time.Second)
+	defer cancel()
+
+	conn, err := grpcconn.NewGrpcClient(grpcUrl)
+	if err != nil {
+		log.Printf("error: grpc conn failed: %v", err.Error())
+		return nil, errors.New("error: grpc conn failed")
+	}
+
+	result, err := conn.Player().FindOnePlayerProfileToRefresh(ctx, req)
+	if err != nil {
+		log.Printf("error: find one player profile to refresh failed: %v", err.Error())
+		return nil, errors.New("error: player not found")
+	}
+
+	return result, nil
+}
+
+func (r *authRepository) UpdateOnePlayerCredential(pctx context.Context, credentialId string, req *auth.UpdateRefreshTokenReq) error {
+	ctx, cancel := context.WithTimeout(pctx, 10*time.Second)
+	defer cancel()
+
+	db := r.authDbConn(ctx)
+	col := db.Collection("auth")
+
+	_, err := col.UpdateOne(
+		ctx,
+		bson.M{"_id": utils.ConvertToObjectId(credentialId)},
+		bson.M{"$set": bson.M{
+			"player_id":     req.PlayerId,
+			"access_token":  req.AccessToken,
+			"refresh_token": req.RefreshToken,
+			"updated_at":    req.UpdatedAt,
+		}},
+	)
+	if err != nil {
+		log.Printf("error: update one player credential failed: %v", err.Error())
+		return errors.New("error: update one player credential failed")
+	}
+
+	return nil
 }
