@@ -21,6 +21,7 @@ type (
 		FindOnePlayerCredential(pctx context.Context, credentialId string) (*auth.Credential, error)
 		FindOnePlayerProfileToRefresh(pctx context.Context, grpcUrl string, req *playerPb.FindOnePlayerProfileToRefreshReq) (*playerPb.PlayerProfile, error)
 		UpdateOnePlayerCredential(pctx context.Context, credentialId string, req *auth.UpdateRefreshTokenReq) error
+		DeleteOnePlayerCredential(pctx context.Context, credentialId string) error
 	}
 
 	authRepository struct {
@@ -128,6 +129,29 @@ func (r *authRepository) UpdateOnePlayerCredential(pctx context.Context, credent
 		log.Printf("error: update one player credential failed: %v", err.Error())
 		return errors.New("error: update one player credential failed")
 	}
+
+	return nil
+}
+
+func (r *authRepository) DeleteOnePlayerCredential(pctx context.Context, credentialId string) error {
+	ctx, cancel := context.WithTimeout(pctx, 10*time.Second)
+	defer cancel()
+
+	db := r.authDbConn(ctx)
+	col := db.Collection("auth")
+
+	result, err := col.DeleteOne(ctx, bson.M{"_id": utils.ConvertToObjectId(credentialId)})
+	if err != nil {
+		log.Printf("Error: delete one player credential: %v", err.Error())
+		return errors.New("error: delete player credential failed")
+	}
+
+	if result.DeletedCount == 0 {
+		log.Printf("info: player credential not found")
+		return errors.New("error: player credential not found")
+	}
+
+	log.Printf("DeleteOnePlayerCredential: %v", result.DeletedCount)
 
 	return nil
 }
