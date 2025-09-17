@@ -9,6 +9,7 @@ import (
 
 	"github.com/Supakornn/mmorpg-shop/config"
 	"github.com/Supakornn/mmorpg-shop/modules/auth"
+	authPb "github.com/Supakornn/mmorpg-shop/modules/auth/authPb"
 	"github.com/Supakornn/mmorpg-shop/modules/auth/authRepository"
 	"github.com/Supakornn/mmorpg-shop/modules/player"
 	playerPb "github.com/Supakornn/mmorpg-shop/modules/player/playerPb"
@@ -21,6 +22,7 @@ type (
 		Login(pctx context.Context, cfg *config.Config, req *auth.PlayerLoginReq) (*auth.ProfileIntercepter, error)
 		RefreshToken(pctx context.Context, cfg *config.Config, req *auth.RefreshTokenReq) (*auth.ProfileIntercepter, error)
 		Logout(pctx context.Context, credentialId string) error
+		AccessTokenSearch(pctx context.Context, accessToken string) (*authPb.AccessTokenSearchRes, error)
 	}
 
 	authUsecase struct {
@@ -155,4 +157,23 @@ func (u *authUsecase) RefreshToken(pctx context.Context, cfg *config.Config, req
 
 func (u *authUsecase) Logout(pctx context.Context, credentialId string) error {
 	return u.authRepository.DeleteOnePlayerCredential(pctx, credentialId)
+}
+
+func (u *authUsecase) AccessTokenSearch(pctx context.Context, accessToken string) (*authPb.AccessTokenSearchRes, error) {
+	credential, err := u.authRepository.FindOneAccessToken(pctx, accessToken)
+	if err != nil {
+		return &authPb.AccessTokenSearchRes{
+			IsValid: false,
+		}, errors.New("error: access token not found")
+	}
+
+	if credential == nil {
+		return &authPb.AccessTokenSearchRes{
+			IsValid: false,
+		}, errors.New("error: access token not found")
+	}
+
+	return &authPb.AccessTokenSearchRes{
+		IsValid: true,
+	}, nil
 }
