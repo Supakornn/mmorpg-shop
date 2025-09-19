@@ -8,6 +8,7 @@ import (
 
 	authPb "github.com/Supakornn/mmorpg-shop/modules/auth/authPb"
 	"github.com/Supakornn/mmorpg-shop/pkg/grpcconn"
+	"github.com/Supakornn/mmorpg-shop/pkg/jwtauth"
 )
 
 type (
@@ -32,6 +33,8 @@ func (r *middlewareRepository) AccessTokenSearch(pctx context.Context, grpcUrl, 
 		log.Printf("error: grpc conn failed: %v", err.Error())
 		return errors.New("error: grpc conn failed")
 	}
+
+	jwtauth.SetApiKeyInContext(&ctx)
 
 	result, err := conn.Auth().AccessTokenSearch(ctx, &authPb.AccessTokenSearchReq{
 		AccessToken: accessToken,
@@ -58,6 +61,8 @@ func (r *middlewareRepository) RolesCount(pctx context.Context, grpcUrl string) 
 		log.Printf("error: grpc conn failed: %v", err.Error())
 		return -1, errors.New("error: grpc conn failed")
 	}
+
+	jwtauth.SetApiKeyInContext(&ctx)
 
 	result, err := conn.Auth().RolesCount(ctx, &authPb.RolesCountReq{})
 	if err != nil {

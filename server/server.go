@@ -13,6 +13,7 @@ import (
 	"github.com/Supakornn/mmorpg-shop/modules/middleware/middlewareHandler"
 	"github.com/Supakornn/mmorpg-shop/modules/middleware/middlewareRepository"
 	"github.com/Supakornn/mmorpg-shop/modules/middleware/middlewareUsecase"
+	"github.com/Supakornn/mmorpg-shop/pkg/jwtauth"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"go.mongodb.org/mongo-driver/v2/mongo"
@@ -64,7 +65,8 @@ func Start(pctx context.Context, cfg *config.Config, db *mongo.Client) {
 		mid: newMiddleware(cfg),
 	}
 
-	// Middleware Basic
+	jwtauth.SetApiKey(cfg.Jwt.ApiSecretKey)
+
 	// Request Timeout
 	s.app.Use(middleware.TimeoutWithConfig(middleware.TimeoutConfig{
 		Skipper:      middleware.DefaultSkipper,

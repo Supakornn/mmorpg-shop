@@ -9,6 +9,7 @@ import (
 	"github.com/Supakornn/mmorpg-shop/modules/auth"
 	playerPb "github.com/Supakornn/mmorpg-shop/modules/player/playerPb"
 	"github.com/Supakornn/mmorpg-shop/pkg/grpcconn"
+	"github.com/Supakornn/mmorpg-shop/pkg/jwtauth"
 	"github.com/Supakornn/mmorpg-shop/pkg/utils"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
@@ -48,6 +49,8 @@ func (r *authRepository) CredentialSearch(pctx context.Context, grpcUrl string, 
 		log.Printf("error: grpc conn failed: %v", err.Error())
 		return nil, errors.New("error: grpc conn failed")
 	}
+
+	jwtauth.SetApiKeyInContext(&ctx)
 
 	result, err := conn.Player().CredentialSearch(ctx, req)
 	if err != nil {
@@ -100,6 +103,8 @@ func (r *authRepository) FindOnePlayerProfileToRefresh(pctx context.Context, grp
 		log.Printf("error: grpc conn failed: %v", err.Error())
 		return nil, errors.New("error: grpc conn failed")
 	}
+
+	jwtauth.SetApiKeyInContext(&ctx)
 
 	result, err := conn.Player().FindOnePlayerProfileToRefresh(ctx, req)
 	if err != nil {
