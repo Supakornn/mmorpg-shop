@@ -23,6 +23,7 @@ type (
 		UpdateOnePlayerCredential(pctx context.Context, credentialId string, req *auth.UpdateRefreshTokenReq) error
 		DeleteOnePlayerCredential(pctx context.Context, credentialId string) error
 		FindOneAccessToken(pctx context.Context, accessToken string) (*auth.Credential, error)
+		RoleCount(pctx context.Context) (int64, error)
 	}
 
 	authRepository struct {
@@ -171,4 +172,20 @@ func (r *authRepository) FindOneAccessToken(pctx context.Context, accessToken st
 	}
 
 	return credential, nil
+}
+
+func (r *authRepository) RoleCount(pctx context.Context) (int64, error) {
+	ctx, cancel := context.WithTimeout(pctx, 10*time.Second)
+	defer cancel()
+
+	db := r.authDbConn(ctx)
+	col := db.Collection("roles")
+
+	count, err := col.CountDocuments(ctx, bson.M{})
+	if err != nil {
+		log.Printf("error: role count failed: %v", err.Error())
+		return -1, errors.New("error: roles count failed")
+	}
+
+	return count, nil
 }
