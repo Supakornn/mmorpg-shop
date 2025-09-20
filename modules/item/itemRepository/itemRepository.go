@@ -21,6 +21,7 @@ type (
 		FindManyItems(pctx context.Context, filter bson.D, opts ...options.Lister[options.FindOptions]) ([]*item.ItemShowCase, error)
 		CountItems(pctx context.Context, filter bson.D) (int64, error)
 		UpdateOneItem(pctx context.Context, itemId string, req bson.M) error
+		UpdateOneItemUsageStatus(pctx context.Context, itemId string, usageStatus bool) error
 	}
 
 	itemRepository struct {
@@ -147,6 +148,24 @@ func (r *itemRepository) UpdateOneItem(pctx context.Context, itemId string, req 
 	}
 
 	log.Printf("UpdateOneItem: %v", result.ModifiedCount)
+
+	return nil
+}
+
+func (r *itemRepository) UpdateOneItemUsageStatus(pctx context.Context, itemId string, usageStatus bool) error {
+	ctx, cancel := context.WithTimeout(pctx, 10*time.Second)
+	defer cancel()
+
+	db := r.itemDbConn(ctx)
+	col := db.Collection("items")
+
+	result, err := col.UpdateOne(ctx, bson.M{"_id": utils.ConvertToObjectId(itemId)}, bson.M{"$set": bson.M{"usage_status": usageStatus}})
+	if err != nil {
+		log.Printf("error: update one item usage status: %v", err.Error())
+		return errors.New("error: update one item usage status failed")
+	}
+
+	log.Printf("UpdateOneItemUsageStatus: %v", result.ModifiedCount)
 
 	return nil
 }

@@ -2,6 +2,7 @@ package itemHandler
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/url"
 	"strings"
@@ -20,6 +21,7 @@ type (
 		FindOneItem(c echo.Context) error
 		FindManyItems(c echo.Context) error
 		EditItem(c echo.Context) error
+		ToggleItemUsageStatus(c echo.Context) error
 	}
 
 	itemHttpHandler struct {
@@ -116,4 +118,26 @@ func (h *itemHttpHandler) EditItem(c echo.Context) error {
 	}
 
 	return response.SuccessResponse(c, http.StatusOK, res)
+}
+
+func (h *itemHttpHandler) ToggleItemUsageStatus(c echo.Context) error {
+	ctx := context.Background()
+
+	originalParam := c.Param("item_id")
+
+	decodedParam, err := url.QueryUnescape(originalParam)
+	if err != nil {
+		return response.ErrResponse(c, http.StatusBadRequest, "invalid parameter format")
+	}
+
+	itemId := strings.TrimPrefix(decodedParam, "item:")
+
+	res, err := h.itemUsecase.ToggleItemUsageStatus(ctx, itemId)
+	if err != nil {
+		return response.ErrResponse(c, http.StatusInternalServerError, err.Error())
+	}
+
+	return response.SuccessResponse(c, http.StatusOK, &response.MsgResponse{
+		Message: fmt.Sprintf("Item status toggled to %t", res),
+	})
 }

@@ -20,6 +20,7 @@ type (
 		FindOneItem(pctx context.Context, itemId string) (*item.ItemShowCase, error)
 		FindManyItems(pctx context.Context, req *item.ItemSearchReq, basePaginateUrl string) (*models.PaginateRes, error)
 		EditItem(pctx context.Context, itemId string, req *item.ItemUpdateReq) (*item.ItemShowCase, error)
+		ToggleItemUsageStatus(pctx context.Context, itemId string) (bool, error)
 	}
 
 	itemUsecase struct {
@@ -157,4 +158,17 @@ func (u *itemUsecase) EditItem(pctx context.Context, itemId string, req *item.It
 	}
 
 	return u.FindOneItem(pctx, itemId)
+}
+
+func (u *itemUsecase) ToggleItemUsageStatus(pctx context.Context, itemId string) (bool, error) {
+	result, err := u.itemRepository.FindOneItem(pctx, itemId)
+	if err != nil {
+		return false, errors.New("error: find one item failed")
+	}
+
+	if err := u.itemRepository.UpdateOneItemUsageStatus(pctx, itemId, !result.UsageStatus); err != nil {
+		return false, errors.New("error: update one item usage status failed")
+	}
+
+	return !result.UsageStatus, nil
 }
