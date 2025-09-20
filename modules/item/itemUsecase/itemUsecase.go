@@ -71,32 +71,32 @@ func (u *itemUsecase) FindOneItem(pctx context.Context, itemId string) (*item.It
 }
 
 func (u *itemUsecase) FindManyItems(pctx context.Context, req *item.ItemSearchReq, basePaginateUrl string) (*models.PaginateRes, error) {
-	findItemsFilter := bson.D{}
-	findItemsOpts := make([]options.Lister[options.FindOptions], 0)
-	countItemsFilter := bson.D{}
+	itemFilter := bson.D{}
+	opts := make([]options.Lister[options.FindOptions], 0)
+	countFilter := bson.D{}
 
 	if req.Start != "" {
 		req.Start = strings.TrimPrefix(req.Start, "item:")
-		findItemsFilter = append(findItemsFilter, bson.E{Key: "_id", Value: bson.D{{Key: "$gt", Value: utils.ConvertToObjectId(req.Start)}}})
+		itemFilter = append(itemFilter, bson.E{Key: "_id", Value: bson.D{{Key: "$gt", Value: utils.ConvertToObjectId(req.Start)}}})
 	}
 
 	if req.Title != "" {
-		findItemsFilter = append(findItemsFilter, bson.E{Key: "title", Value: bson.Regex{Pattern: req.Title, Options: "i"}})
-		countItemsFilter = append(countItemsFilter, bson.E{Key: "title", Value: bson.Regex{Pattern: req.Title, Options: "i"}})
+		itemFilter = append(itemFilter, bson.E{Key: "title", Value: bson.Regex{Pattern: req.Title, Options: "i"}})
+		countFilter = append(countFilter, bson.E{Key: "title", Value: bson.Regex{Pattern: req.Title, Options: "i"}})
 	}
 
-	findItemsFilter = append(findItemsFilter, bson.E{Key: "usage_status", Value: true})
-	countItemsFilter = append(countItemsFilter, bson.E{Key: "usage_status", Value: true})
+	itemFilter = append(itemFilter, bson.E{Key: "usage_status", Value: true})
+	countFilter = append(countFilter, bson.E{Key: "usage_status", Value: true})
 
-	findItemsOpts = append(findItemsOpts, options.Find().SetSort(bson.D{{Key: "_id", Value: 1}}))
-	findItemsOpts = append(findItemsOpts, options.Find().SetLimit(int64(req.Limit)))
+	opts = append(opts, options.Find().SetSort(bson.D{{Key: "_id", Value: 1}}))
+	opts = append(opts, options.Find().SetLimit(int64(req.Limit)))
 
-	results, err := u.itemRepository.FindManyItems(pctx, findItemsFilter, findItemsOpts...)
+	results, err := u.itemRepository.FindManyItems(pctx, itemFilter, opts...)
 	if err != nil {
 		return nil, errors.New("error: find many items failed")
 	}
 
-	count, err := u.itemRepository.CountItems(pctx, countItemsFilter)
+	count, err := u.itemRepository.CountItems(pctx, countFilter)
 	if err != nil {
 		return nil, errors.New("error: count items failed")
 	}
