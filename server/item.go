@@ -28,8 +28,9 @@ func (s *server) itemService() {
 
 	item := s.app.Group("/item_v1")
 
-	item.GET("", s.healthCheckService)                                                                       // Health check
-	item.POST("/item", s.mid.JwtAuthorization(s.mid.RbacAuthorization(httpHandler.CreateItem, []int{1, 0}))) // Create Item
-	item.GET("/item/:item_id", httpHandler.FindOneItem)                                                      // Find One Item
-	item.GET("/items", httpHandler.FindManyItems)                                                            // Find Many Items
+	item.GET("", s.healthCheckService)                                                                               // Health check
+	item.POST("/item", s.mid.JwtAuthorization(s.mid.RbacAuthorization(httpHandler.CreateItem, []int{1, 0})))         // Create Item
+	item.GET("/item/:item_id", httpHandler.FindOneItem)                                                              // Find One Item
+	item.GET("/items", httpHandler.FindManyItems)                                                                    // Find Many Items
+	item.PATCH("/item/:item_id", s.mid.JwtAuthorization(s.mid.RbacAuthorization(httpHandler.EditItem, []int{1, 0}))) // Edit Item
 }
