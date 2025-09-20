@@ -10,6 +10,7 @@ import (
 	"github.com/Supakornn/mmorpg-shop/pkg/utils"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 )
 
 type (
@@ -17,6 +18,8 @@ type (
 		IsUniqueItem(pctx context.Context, title string) bool
 		InsertOneItem(pctx context.Context, req *item.Item) (bson.ObjectID, error)
 		FindOneItem(pctx context.Context, itemId string) (*item.Item, error)
+		FindManyItems(pctx context.Context, filter bson.D, opts ...options.Lister[options.FindOptions]) ([]*item.ItemShowCase, error)
+		CountItems(pctx context.Context, filter bson.D) (int64, error)
 	}
 
 	itemRepository struct {
@@ -77,4 +80,54 @@ func (r *itemRepository) FindOneItem(pctx context.Context, itemId string) (*item
 	}
 
 	return result, nil
+}
+
+func (r *itemRepository) FindManyItems(pctx context.Context, filter bson.D, opts ...options.Lister[options.FindOptions]) ([]*item.ItemShowCase, error) {
+	ctx, cancel := context.WithTimeout(pctx, 10*time.Second)
+	defer cancel()
+
+	db := r.itemDbConn(ctx)
+	col := db.Collection("items")
+
+	cursors, err := col.Find(ctx, filter, opts...)
+	if err != nil {
+		log.Printf("error: find many items: %v", err.Error())
+		return make([]*item.ItemShowCase, 0), errors.New("error: find many items failed")
+	}
+
+	results := make([]*item.ItemShowCase, 0)
+
+	for cursors.Next(ctx) {
+		result := new(item.Item)
+		if err := cursors.Decode(result); err != nil {
+			log.Printf("error: decode item: %v", err.Error())
+			return make([]*item.ItemShowCase, 0), errors.New("error: decode item failed")
+		}
+
+		results = append(results, &item.ItemShowCase{
+			ItemId:   "item:" + result.Id.Hex(),
+			Title:    result.Title,
+			Price:    result.Price,
+			ImageUrl: result.ImageUrl,
+			Damage:   result.Damage,
+		})
+	}
+
+	return results, nil
+}
+
+func (r *itemRepository) CountItems(pctx context.Context, filter bson.D) (int64, error) {
+	ctx, cancel := context.WithTimeout(pctx, 10*time.Second)
+	defer cancel()
+
+	db := r.itemDbConn(ctx)
+	col := db.Collection("items")
+
+	count, err := col.CountDocuments(ctx, filter)
+	if err != nil {
+		log.Printf("error: count items: %v", err.Error())
+		return -1, errors.New("error: count items failed")
+	}
+
+	return count, nil
 }
