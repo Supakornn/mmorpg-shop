@@ -24,11 +24,10 @@ func (s *server) itemService() {
 		grpcServer.Serve(lis)
 	}()
 
-	_ = httpHandler
 	_ = grpcHandler
 
 	item := s.app.Group("/item_v1")
 
-	// Health check
-	item.GET("", s.healthCheckService)
+	item.GET("", s.healthCheckService)                                                                       // Health check
+	item.POST("/item", s.mid.JwtAuthorization(s.mid.RbacAuthorization(httpHandler.CreateItem, []int{1, 0}))) // Create Item
 }

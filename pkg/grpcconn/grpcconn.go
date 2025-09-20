@@ -35,7 +35,7 @@ type (
 	}
 )
 
-func (g *grpcAuth) unaryAuthorization(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+func (g *grpcAuth) unaryAuthorization(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
 	md, ok := metadata.FromIncomingContext(ctx)
 	if !ok {
 		log.Printf("error: metadata is not provided")
