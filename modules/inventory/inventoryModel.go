@@ -11,13 +11,13 @@ type (
 		ItemId   string `json:"item_id" validate:"required,max=64"`
 	}
 
-	ItemInventory struct {
+	ItemInInventory struct {
 		InventoryId string `json:"inventory_id"`
+		PlayerId    string `json:"player_id"`
 		*item.ItemShowCase
 	}
 
-	PlayerInventory struct {
-		PlayerId string `json:"player_id"`
-		*models.PaginateRes
+	InventorySearchReq struct {
+		models.PaginateReq
 	}
 )

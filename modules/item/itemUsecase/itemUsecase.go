@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/Supakornn/mmorpg-shop/modules/item"
+	itemPb "github.com/Supakornn/mmorpg-shop/modules/item/itemPb"
 	"github.com/Supakornn/mmorpg-shop/modules/item/itemRepository"
 	"github.com/Supakornn/mmorpg-shop/modules/models"
 	"github.com/Supakornn/mmorpg-shop/pkg/utils"
@@ -21,6 +22,7 @@ type (
 		FindManyItems(pctx context.Context, req *item.ItemSearchReq, basePaginateUrl string) (*models.PaginateRes, error)
 		EditItem(pctx context.Context, itemId string, req *item.ItemUpdateReq) (*item.ItemShowCase, error)
 		ToggleItemUsageStatus(pctx context.Context, itemId string) (bool, error)
+		FindItemsInIds(pctx context.Context, req *itemPb.FindItemsInIdsReq) (*itemPb.FindItemsInIdsRes, error)
 	}
 
 	itemUsecase struct {
@@ -171,4 +173,37 @@ func (u *itemUsecase) ToggleItemUsageStatus(pctx context.Context, itemId string)
 	}
 
 	return !result.UsageStatus, nil
+}
+
+func (u *itemUsecase) FindItemsInIds(pctx context.Context, req *itemPb.FindItemsInIdsReq) (*itemPb.FindItemsInIdsRes, error) {
+	filter := bson.D{}
+
+	objectIds := make([]bson.ObjectID, 0)
+	for _, itemId := range req.Ids {
+		objectIds = append(objectIds, utils.ConvertToObjectId(strings.TrimPrefix(itemId, "item:")))
+	}
+
+	filter = append(filter, bson.E{Key: "_id", Value: bson.D{{Key: "$in", Value: objectIds}}})
+	filter = append(filter, bson.E{Key: "usage_status", Value: true})
+
+	results, err := u.itemRepository.FindManyItems(pctx, filter, nil)
+	if err != nil {
+		return nil, errors.New("error: find many items failed")
+	}
+
+	resultsToRes := make([]*itemPb.Item, 0)
+
+	for _, result := range results {
+		resultsToRes = append(resultsToRes, &itemPb.Item{
+			Id:       result.ItemId,
+			Title:    result.Title,
+			Price:    result.Price,
+			ImageUrl: result.ImageUrl,
+			Damage:   int32(result.Damage),
+		})
+	}
+
+	return &itemPb.FindItemsInIdsRes{
+		Items: resultsToRes,
+	}, nil
 }
