@@ -30,4 +30,5 @@ func (s *server) itemService() {
 
 	item.GET("", s.healthCheckService)                                                                       // Health check
 	item.POST("/item", s.mid.JwtAuthorization(s.mid.RbacAuthorization(httpHandler.CreateItem, []int{1, 0}))) // Create Item
+	item.GET("/item/:item_id", httpHandler.FindOneItem)                                                      // Find One Item
 }

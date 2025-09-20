@@ -3,6 +3,8 @@ package itemHandler
 import (
 	"context"
 	"net/http"
+	"net/url"
+	"strings"
 
 	"github.com/Supakornn/mmorpg-shop/config"
 	"github.com/Supakornn/mmorpg-shop/modules/item"
@@ -15,6 +17,7 @@ import (
 type (
 	ItemHttpHandlerService interface {
 		CreateItem(c echo.Context) error
+		FindOneItem(c echo.Context) error
 	}
 
 	itemHttpHandler struct {
@@ -44,4 +47,24 @@ func (h *itemHttpHandler) CreateItem(c echo.Context) error {
 	}
 
 	return response.SuccessResponse(c, http.StatusCreated, res)
+}
+
+func (h *itemHttpHandler) FindOneItem(c echo.Context) error {
+	ctx := context.Background()
+
+	originalParam := c.Param("item_id")
+
+	decodedParam, err := url.QueryUnescape(originalParam)
+	if err != nil {
+		return response.ErrResponse(c, http.StatusBadRequest, "invalid parameter format")
+	}
+
+	itemId := strings.TrimPrefix(decodedParam, "item:")
+
+	res, err := h.itemUsecase.FindOneItem(ctx, itemId)
+	if err != nil {
+		return response.ErrResponse(c, http.StatusInternalServerError, err.Error())
+	}
+
+	return response.SuccessResponse(c, http.StatusOK, res)
 }
