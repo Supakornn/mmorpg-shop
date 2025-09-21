@@ -110,12 +110,12 @@ func (u *authUsecase) RefreshToken(pctx context.Context, cfg *config.Config, req
 		return nil, err
 	}
 
-	accessToken := jwtauth.NewAccessToken(cfg.Jwt.AccessSecretKey, cfg.Jwt.AccessDuration, &jwtauth.Claims{
+	accessToken := u.authRepository.AccessToken(cfg, &jwtauth.Claims{
 		PlayerId: profile.Id,
 		RoleCode: int(profile.RoleCode),
-	}).SignToken()
+	})
 
-	refreshToken := jwtauth.ReloadToken(cfg.Jwt.RefreshSecretKey, claims.ExpiresAt.Unix(), &jwtauth.Claims{
+	refreshToken := u.authRepository.RefreshToken(cfg, &jwtauth.Claims{
 		PlayerId: profile.Id,
 		RoleCode: int(profile.RoleCode),
 	})

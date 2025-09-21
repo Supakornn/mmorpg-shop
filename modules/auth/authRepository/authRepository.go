@@ -6,6 +6,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/Supakornn/mmorpg-shop/config"
 	"github.com/Supakornn/mmorpg-shop/modules/auth"
 	playerPb "github.com/Supakornn/mmorpg-shop/modules/player/playerPb"
 	"github.com/Supakornn/mmorpg-shop/pkg/grpcconn"
@@ -25,6 +26,8 @@ type (
 		DeleteOnePlayerCredential(pctx context.Context, credentialId string) error
 		FindOneAccessToken(pctx context.Context, accessToken string) (*auth.Credential, error)
 		RoleCount(pctx context.Context) (int64, error)
+		AccessToken(cfg *config.Config, claims *jwtauth.Claims) string
+		RefreshToken(cfg *config.Config, claims *jwtauth.Claims) string
 	}
 
 	authRepository struct {
@@ -193,4 +196,18 @@ func (r *authRepository) RoleCount(pctx context.Context) (int64, error) {
 	}
 
 	return count, nil
+}
+
+func (r *authRepository) AccessToken(cfg *config.Config, claims *jwtauth.Claims) string {
+	return jwtauth.NewAccessToken(cfg.Jwt.AccessSecretKey, cfg.Jwt.AccessDuration, &jwtauth.Claims{
+		PlayerId: claims.PlayerId,
+		RoleCode: claims.RoleCode,
+	}).SignToken()
+}
+
+func (r *authRepository) RefreshToken(cfg *config.Config, claims *jwtauth.Claims) string {
+	return jwtauth.NewRefreshToken(cfg.Jwt.RefreshSecretKey, cfg.Jwt.RefreshDuration, &jwtauth.Claims{
+		PlayerId: claims.PlayerId,
+		RoleCode: claims.RoleCode,
+	}).SignToken()
 }
