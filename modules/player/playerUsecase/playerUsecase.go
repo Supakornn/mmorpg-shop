@@ -4,8 +4,11 @@ import (
 	"context"
 	"errors"
 	"log"
+	"math"
 	"time"
 
+	"github.com/Supakornn/mmorpg-shop/config"
+	"github.com/Supakornn/mmorpg-shop/modules/payment"
 	"github.com/Supakornn/mmorpg-shop/modules/player"
 	playerPb "github.com/Supakornn/mmorpg-shop/modules/player/playerPb"
 	"github.com/Supakornn/mmorpg-shop/modules/player/playerRepository"
@@ -23,6 +26,8 @@ type (
 		FindOnePlayerProfileToRefresh(pctx context.Context, playerId string) (*playerPb.PlayerProfile, error)
 		GetOffset(pctx context.Context) (int64, error)
 		UpsertOffset(pctx context.Context, offset int64) error
+		RollbackPlayerTransaction(pctx context.Context, req *player.RollbackPlayerTransactionReq)
+		DockedPlayerMoneyRes(pctx context.Context, cfg *config.Config, req *player.CreatePlayerTransactionReq)
 	}
 
 	playerUsecase struct {
@@ -90,7 +95,7 @@ func (u *playerUsecase) FindOnePlayerProfile(pctx context.Context, playerId stri
 }
 
 func (u *playerUsecase) AddPlayerMoney(pctx context.Context, req *player.CreatePlayerTransactionReq) (*player.PlayerSavingAccount, error) {
-	if err := u.playerRepository.InsertOnePlayerTransaction(pctx, &player.PlayerTransaction{
+	if _, err := u.playerRepository.InsertOnePlayerTransaction(pctx, &player.PlayerTransaction{
 		PlayerId:  req.PlayerId,
 		Amount:    req.Amount,
 		CreatedAt: utils.LocalTime(),
@@ -167,4 +172,63 @@ func (u *playerUsecase) GetOffset(pctx context.Context) (int64, error) {
 
 func (u *playerUsecase) UpsertOffset(pctx context.Context, offset int64) error {
 	return u.playerRepository.UpsertOffset(pctx, offset)
+}
+
+func (u *playerUsecase) RollbackPlayerTransaction(pctx context.Context, req *player.RollbackPlayerTransactionReq) {
+	u.playerRepository.DeleteOnePlayerTransaction(pctx, req.TransactionId)
+}
+
+func (u *playerUsecase) DockedPlayerMoneyRes(pctx context.Context, cfg *config.Config, req *player.CreatePlayerTransactionReq) {
+	savingAccount, err := u.playerRepository.GetPlayerSavingAccount(pctx, req.PlayerId)
+	if err != nil {
+		u.playerRepository.DockedPlayerMoneyRes(pctx, cfg, &payment.PaymentTransferRes{
+			TransactionId: "",
+			PlayerId:      req.PlayerId,
+			InventoryId:   "",
+			ItemId:        "",
+			Amount:        req.Amount,
+			Error:         err.Error(),
+		})
+		return
+	}
+
+	if savingAccount.Balance < math.Abs(req.Amount) {
+		log.Println("Error: player balance is not enough")
+		u.playerRepository.DockedPlayerMoneyRes(pctx, cfg, &payment.PaymentTransferRes{
+			TransactionId: "",
+			PlayerId:      req.PlayerId,
+			InventoryId:   "",
+			ItemId:        "",
+			Amount:        req.Amount,
+			Error:         "error: player balance is not enough",
+		})
+		return
+	}
+
+	transactionId, err := u.playerRepository.InsertOnePlayerTransaction(pctx, &player.PlayerTransaction{
+		PlayerId:  req.PlayerId,
+		Amount:    req.Amount,
+		CreatedAt: utils.LocalTime(),
+	})
+	if err != nil {
+		log.Println("Error: insert one player transaction failed")
+		u.playerRepository.DockedPlayerMoneyRes(pctx, cfg, &payment.PaymentTransferRes{
+			TransactionId: "",
+			PlayerId:      req.PlayerId,
+			InventoryId:   "",
+			ItemId:        "",
+			Amount:        req.Amount,
+			Error:         err.Error(),
+		})
+		return
+	}
+
+	u.playerRepository.DockedPlayerMoneyRes(pctx, cfg, &payment.PaymentTransferRes{
+		TransactionId: transactionId.Hex(),
+		PlayerId:      req.PlayerId,
+		InventoryId:   "",
+		ItemId:        "",
+		Amount:        req.Amount,
+		Error:         "",
+	})
 }

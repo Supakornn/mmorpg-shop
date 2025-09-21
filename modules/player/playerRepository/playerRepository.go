@@ -2,12 +2,16 @@ package playerRepository
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"log"
 	"time"
 
+	"github.com/Supakornn/mmorpg-shop/config"
 	"github.com/Supakornn/mmorpg-shop/modules/models"
+	"github.com/Supakornn/mmorpg-shop/modules/payment"
 	"github.com/Supakornn/mmorpg-shop/modules/player"
+	"github.com/Supakornn/mmorpg-shop/pkg/queue"
 	"github.com/Supakornn/mmorpg-shop/pkg/utils"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
@@ -19,12 +23,14 @@ type (
 		IsUniquePlayer(pctx context.Context, email, username string) bool
 		InsertOnePlayer(pctx context.Context, req *player.Player) (bson.ObjectID, error)
 		FindOnePlayerProfile(pctx context.Context, playerId string) (*player.PlayerProfileBson, error)
-		InsertOnePlayerTransaction(pctx context.Context, req *player.PlayerTransaction) error
+		InsertOnePlayerTransaction(pctx context.Context, req *player.PlayerTransaction) (bson.ObjectID, error)
 		GetPlayerSavingAccount(pctx context.Context, playerId string) (*player.PlayerSavingAccount, error)
 		FindOnePlayerCredential(pctx context.Context, email string) (*player.Player, error)
 		FindOnePlayerProfileToRefresh(pctx context.Context, playerId string) (*player.Player, error)
 		GetOffset(pctx context.Context) (int64, error)
 		UpsertOffset(pctx context.Context, offset int64) error
+		DeleteOnePlayerTransaction(pctx context.Context, transactionId string) error
+		DockedPlayerMoneyRes(pctx context.Context, cfg *config.Config, req *payment.PaymentTransferRes) error
 	}
 
 	playerRepository struct {
@@ -111,7 +117,7 @@ func (r *playerRepository) FindOnePlayerProfile(pctx context.Context, playerId s
 	return result, nil
 }
 
-func (r *playerRepository) InsertOnePlayerTransaction(pctx context.Context, req *player.PlayerTransaction) error {
+func (r *playerRepository) InsertOnePlayerTransaction(pctx context.Context, req *player.PlayerTransaction) (bson.ObjectID, error) {
 	ctx, cancel := context.WithTimeout(pctx, 10*time.Second)
 	defer cancel()
 
@@ -121,12 +127,12 @@ func (r *playerRepository) InsertOnePlayerTransaction(pctx context.Context, req 
 	result, err := col.InsertOne(ctx, req)
 	if err != nil {
 		log.Printf("error: insert one player transaction: %v", err.Error())
-		return errors.New("error: insert one player transaction failed")
+		return bson.NilObjectID, errors.New("error: insert one player transaction failed")
 	}
 
 	log.Printf("info: insert one player transaction: %v", result.InsertedID)
 
-	return nil
+	return result.InsertedID.(bson.ObjectID), nil
 }
 
 func (r *playerRepository) GetPlayerSavingAccount(pctx context.Context, playerId string) (*player.PlayerSavingAccount, error) {
@@ -174,6 +180,24 @@ func (r *playerRepository) GetPlayerSavingAccount(pctx context.Context, playerId
 	}
 
 	return result, nil
+}
+
+func (r *playerRepository) DeleteOnePlayerTransaction(pctx context.Context, transactionId string) error {
+	ctx, cancel := context.WithTimeout(pctx, 10*time.Second)
+	defer cancel()
+
+	db := r.playerDbConn(ctx)
+	col := db.Collection("player_transactions")
+
+	result, err := col.DeleteOne(ctx, bson.M{"_id": utils.ConvertToObjectId(transactionId)})
+	if err != nil {
+		log.Printf("error: delete one player transaction: %v", err.Error())
+		return errors.New("error: delete one player transaction failed")
+	}
+
+	log.Printf("info: delete one player transaction: %v", result.DeletedCount)
+
+	return nil
 }
 
 func (r *playerRepository) FindOnePlayerCredential(pctx context.Context, email string) (*player.Player, error) {
@@ -240,6 +264,21 @@ func (r *playerRepository) UpsertOffset(pctx context.Context, offset int64) erro
 	}
 
 	log.Printf("info: upsert offset: %v", result.ModifiedCount)
+
+	return nil
+}
+
+func (r *playerRepository) DockedPlayerMoneyRes(pctx context.Context, cfg *config.Config, req *payment.PaymentTransferRes) error {
+	reqInBytes, err := json.Marshal(req)
+	if err != nil {
+		log.Printf("Error: marshal request failed: %v", err.Error())
+		return errors.New("error: marshal request failed")
+	}
+
+	if err := queue.PushMessageWithKeyToQueue([]string{cfg.Kafka.Url}, cfg.Kafka.ApiKey, cfg.Kafka.Secret, "payment", "buy", reqInBytes); err != nil {
+		log.Printf("Error: push message with key to queue failed: %v", err.Error())
+		return errors.New("error: push message with key to queue failed")
+	}
 
 	return nil
 }

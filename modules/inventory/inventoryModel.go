@@ -20,4 +20,10 @@ type (
 	InventorySearchReq struct {
 		models.PaginateReq
 	}
+
+	RollbackInventoryReq struct {
+		InventoryId string `json:"inventory_id"`
+		PlayerId    string `json:"player_id"`
+		ItemId      string `json:"item_id"`
+	}
 )

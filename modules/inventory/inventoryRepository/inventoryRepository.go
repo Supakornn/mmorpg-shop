@@ -2,15 +2,20 @@ package inventoryRepository
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"log"
 	"time"
 
+	"github.com/Supakornn/mmorpg-shop/config"
 	"github.com/Supakornn/mmorpg-shop/modules/inventory"
 	itemPb "github.com/Supakornn/mmorpg-shop/modules/item/itemPb"
 	"github.com/Supakornn/mmorpg-shop/modules/models"
+	"github.com/Supakornn/mmorpg-shop/modules/payment"
 	"github.com/Supakornn/mmorpg-shop/pkg/grpcconn"
 	"github.com/Supakornn/mmorpg-shop/pkg/jwtauth"
+	"github.com/Supakornn/mmorpg-shop/pkg/queue"
+	"github.com/Supakornn/mmorpg-shop/pkg/utils"
 	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.mongodb.org/mongo-driver/v2/mongo"
 	"go.mongodb.org/mongo-driver/v2/mongo/options"
@@ -23,6 +28,10 @@ type (
 		CountPlayerItems(pctx context.Context, playerId string) (int64, error)
 		GetOffset(pctx context.Context) (int64, error)
 		UpsertOffset(pctx context.Context, offset int64) error
+		AddPlayerItemRes(pctx context.Context, cfg *config.Config, req *payment.PaymentTransferRes) error
+		RemovePlayerItemRes(pctx context.Context, cfg *config.Config, req *payment.PaymentTransferRes) error
+		InsertOnePlayerItem(pctx context.Context, req *inventory.Inventory) (bson.ObjectID, error)
+		DeleteOnePlayerItem(pctx context.Context, inventoryId string) error
 	}
 
 	inventoryRepository struct {
@@ -57,6 +66,14 @@ func (r *inventoryRepository) FindItemsInIds(pctx context.Context, grpcUrl strin
 	}
 
 	if result == nil {
+		return nil, errors.New("error: items not found")
+	}
+
+	if result.Items == nil {
+		return nil, errors.New("error: items not found")
+	}
+
+	if len(result.Items) == 0 {
 		return nil, errors.New("error: items not found")
 	}
 
@@ -141,6 +158,70 @@ func (r *inventoryRepository) UpsertOffset(pctx context.Context, offset int64) e
 	}
 
 	log.Printf("info: upsert offset: %v", result.ModifiedCount)
+
+	return nil
+}
+
+func (r *inventoryRepository) AddPlayerItemRes(pctx context.Context, cfg *config.Config, req *payment.PaymentTransferRes) error {
+	reqInBytes, err := json.Marshal(req)
+	if err != nil {
+		log.Printf("Error: marshal request failed: %v", err.Error())
+		return errors.New("error: marshal request failed")
+	}
+
+	if err := queue.PushMessageWithKeyToQueue([]string{cfg.Kafka.Url}, cfg.Kafka.ApiKey, cfg.Kafka.Secret, "payment", "buy", reqInBytes); err != nil {
+		log.Printf("Error: push message with key to queue failed: %v", err.Error())
+		return errors.New("error: push message with key to queue failed")
+	}
+
+	return nil
+}
+
+func (r *inventoryRepository) RemovePlayerItemRes(pctx context.Context, cfg *config.Config, req *payment.PaymentTransferRes) error {
+	reqInBytes, err := json.Marshal(req)
+	if err != nil {
+		log.Printf("Error: marshal request failed: %v", err.Error())
+		return errors.New("error: marshal request failed")
+	}
+
+	if err := queue.PushMessageWithKeyToQueue([]string{cfg.Kafka.Url}, cfg.Kafka.ApiKey, cfg.Kafka.Secret, "payment", "sell", reqInBytes); err != nil {
+		log.Printf("Error: push message with key to queue failed: %v", err.Error())
+		return errors.New("error: push message with key to queue failed")
+	}
+
+	return nil
+}
+
+func (r *inventoryRepository) InsertOnePlayerItem(pctx context.Context, req *inventory.Inventory) (bson.ObjectID, error) {
+	ctx, cancel := context.WithTimeout(pctx, 10*time.Second)
+	defer cancel()
+
+	db := r.inventoryDbConn(ctx)
+	col := db.Collection("inventories")
+
+	result, err := col.InsertOne(ctx, req)
+	if err != nil {
+		log.Printf("error: insert one player item: %v", err.Error())
+		return bson.NilObjectID, errors.New("error: insert one player item failed")
+	}
+
+	return result.InsertedID.(bson.ObjectID), nil
+}
+
+func (r *inventoryRepository) DeleteOnePlayerItem(pctx context.Context, inventoryId string) error {
+	ctx, cancel := context.WithTimeout(pctx, 10*time.Second)
+	defer cancel()
+
+	db := r.inventoryDbConn(ctx)
+	col := db.Collection("inventories")
+
+	result, err := col.DeleteOne(ctx, bson.M{"_id": utils.ConvertToObjectId(inventoryId)})
+	if err != nil {
+		log.Printf("error: delete one player item: %v", err.Error())
+		return errors.New("error: delete one player item failed")
+	}
+
+	log.Printf("delete one player item: %v", result.DeletedCount)
 
 	return nil
 }
