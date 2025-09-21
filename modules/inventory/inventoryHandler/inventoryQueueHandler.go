@@ -95,6 +95,40 @@ func (h *inventoryQueueHandler) AddPlayerItem() {
 }
 
 func (h *inventoryQueueHandler) RemovePlayerItem() {
+	ctx := context.Background()
+
+	consumer, err := h.InventoryConsumer(ctx)
+	if err != nil {
+		return
+	}
+	defer consumer.Close()
+
+	log.Println("Remove player item consumer started")
+
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+
+	for {
+		select {
+		case err := <-consumer.Errors():
+			log.Printf("Error: remove player item consumer failed: %v", err.Error())
+			continue
+		case msg := <-consumer.Messages():
+			if string(msg.Key) == "sell" {
+				h.inventoryUsecase.UpsertOffset(ctx, msg.Offset+1)
+				req := new(inventory.UpdateInventoryReq)
+				if err := queue.DecodeMessage(req, msg.Value); err != nil {
+					continue
+				}
+
+				h.inventoryUsecase.RemovePlayerItemRes(ctx, h.cfg, req)
+				log.Printf("info: remove player item: topic: %s, offset: %d, value: %s", msg.Topic, msg.Offset, string(msg.Value))
+			}
+		case <-sigChan:
+			log.Println("Remove player item consumer stopped")
+			return
+		}
+	}
 
 }
 
@@ -136,5 +170,38 @@ func (h *inventoryQueueHandler) RollbackAddPlayerItem() {
 }
 
 func (h *inventoryQueueHandler) RollbackRemovePlayerItem() {
+	ctx := context.Background()
 
+	consumer, err := h.InventoryConsumer(ctx)
+	if err != nil {
+		return
+	}
+	defer consumer.Close()
+
+	log.Println("Rollback remove player item consumer started")
+
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+
+	for {
+		select {
+		case err := <-consumer.Errors():
+			log.Printf("Error: rollback remove player item consumer failed: %v", err.Error())
+			continue
+		case msg := <-consumer.Messages():
+			if string(msg.Key) == "rremove" {
+				h.inventoryUsecase.UpsertOffset(ctx, msg.Offset+1)
+				req := new(inventory.RollbackInventoryReq)
+				if err := queue.DecodeMessage(req, msg.Value); err != nil {
+					continue
+				}
+
+				h.inventoryUsecase.RollbackRemovePlayerItem(ctx, h.cfg, req)
+				log.Printf("info: rollback add player item: topic: %s, offset: %d, value: %s", msg.Topic, msg.Offset, string(msg.Value))
+			}
+		case <-sigChan:
+			log.Println("Rollback remove player item consumer stopped")
+			return
+		}
+	}
 }

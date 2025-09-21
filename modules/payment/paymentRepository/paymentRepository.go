@@ -29,6 +29,9 @@ type (
 		RollbackTransaction(pctx context.Context, cfg *config.Config, req *player.RollbackPlayerTransactionReq) error
 		RollbackAddPlayerItem(pctx context.Context, cfg *config.Config, req *inventory.RollbackInventoryReq) error
 		AddPlayerItem(pctx context.Context, cfg *config.Config, req *inventory.UpdateInventoryReq) error
+		RemovePlayerItem(pctx context.Context, cfg *config.Config, req *inventory.UpdateInventoryReq) error
+		RollbackRemovePlayerItem(pctx context.Context, cfg *config.Config, req *inventory.RollbackInventoryReq) error
+		AddPlayerMoney(pctx context.Context, cfg *config.Config, req *player.CreatePlayerTransactionReq) error
 	}
 
 	paymentRepository struct {
@@ -118,6 +121,21 @@ func (r *paymentRepository) DockedPlayerMoney(pctx context.Context, cfg *config.
 	return nil
 }
 
+func (r *paymentRepository) AddPlayerMoney(pctx context.Context, cfg *config.Config, req *player.CreatePlayerTransactionReq) error {
+	reqInBytes, err := json.Marshal(req)
+	if err != nil {
+		log.Printf("Error: marshal request failed: %v", err.Error())
+		return errors.New("error: marshal request failed")
+	}
+
+	if err := queue.PushMessageWithKeyToQueue([]string{cfg.Kafka.Url}, cfg.Kafka.ApiKey, cfg.Kafka.Secret, "player", "sell", reqInBytes); err != nil {
+		log.Printf("Error: push message with key to queue failed: %v", err.Error())
+		return errors.New("error: push message with key to queue failed")
+	}
+
+	return nil
+}
+
 func (r *paymentRepository) AddPlayerItem(pctx context.Context, cfg *config.Config, req *inventory.UpdateInventoryReq) error {
 	reqInBytes, err := json.Marshal(req)
 	if err != nil {
@@ -156,6 +174,36 @@ func (r *paymentRepository) RollbackAddPlayerItem(pctx context.Context, cfg *con
 	}
 
 	if err := queue.PushMessageWithKeyToQueue([]string{cfg.Kafka.Url}, cfg.Kafka.ApiKey, cfg.Kafka.Secret, "inventory", "radd", reqInBytes); err != nil {
+		log.Printf("Error: push message with key to queue failed: %v", err.Error())
+		return errors.New("error: push message with key to queue failed")
+	}
+
+	return nil
+}
+
+func (r *paymentRepository) RemovePlayerItem(pctx context.Context, cfg *config.Config, req *inventory.UpdateInventoryReq) error {
+	reqInBytes, err := json.Marshal(req)
+	if err != nil {
+		log.Printf("Error: marshal request failed: %v", err.Error())
+		return errors.New("error: marshal request failed")
+	}
+
+	if err := queue.PushMessageWithKeyToQueue([]string{cfg.Kafka.Url}, cfg.Kafka.ApiKey, cfg.Kafka.Secret, "inventory", "sell", reqInBytes); err != nil {
+		log.Printf("Error: push message with key to queue failed: %v", err.Error())
+		return errors.New("error: push message with key to queue failed")
+	}
+
+	return nil
+}
+
+func (r *paymentRepository) RollbackRemovePlayerItem(pctx context.Context, cfg *config.Config, req *inventory.RollbackInventoryReq) error {
+	reqInBytes, err := json.Marshal(req)
+	if err != nil {
+		log.Printf("Error: marshal request failed: %v", err.Error())
+		return errors.New("error: marshal request failed")
+	}
+
+	if err := queue.PushMessageWithKeyToQueue([]string{cfg.Kafka.Url}, cfg.Kafka.ApiKey, cfg.Kafka.Secret, "inventory", "rremove", reqInBytes); err != nil {
 		log.Printf("Error: push message with key to queue failed: %v", err.Error())
 		return errors.New("error: push message with key to queue failed")
 	}

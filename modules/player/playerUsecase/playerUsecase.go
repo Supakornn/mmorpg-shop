@@ -28,6 +28,7 @@ type (
 		UpsertOffset(pctx context.Context, offset int64) error
 		RollbackPlayerTransaction(pctx context.Context, req *player.RollbackPlayerTransactionReq)
 		DockedPlayerMoneyRes(pctx context.Context, cfg *config.Config, req *player.CreatePlayerTransactionReq)
+		AddPlayerMoneyRes(pctx context.Context, cfg *config.Config, req *player.CreatePlayerTransactionReq)
 	}
 
 	playerUsecase struct {
@@ -224,6 +225,35 @@ func (u *playerUsecase) DockedPlayerMoneyRes(pctx context.Context, cfg *config.C
 	}
 
 	u.playerRepository.DockedPlayerMoneyRes(pctx, cfg, &payment.PaymentTransferRes{
+		TransactionId: transactionId.Hex(),
+		PlayerId:      req.PlayerId,
+		InventoryId:   "",
+		ItemId:        "",
+		Amount:        req.Amount,
+		Error:         "",
+	})
+}
+
+func (u *playerUsecase) AddPlayerMoneyRes(pctx context.Context, cfg *config.Config, req *player.CreatePlayerTransactionReq) {
+	transactionId, err := u.playerRepository.InsertOnePlayerTransaction(pctx, &player.PlayerTransaction{
+		PlayerId:  req.PlayerId,
+		Amount:    req.Amount,
+		CreatedAt: utils.LocalTime(),
+	})
+	if err != nil {
+		log.Println("Error: insert one player transaction failed")
+		u.playerRepository.AddPlayerMoneyRes(pctx, cfg, &payment.PaymentTransferRes{
+			TransactionId: "",
+			PlayerId:      req.PlayerId,
+			InventoryId:   "",
+			ItemId:        "",
+			Amount:        req.Amount,
+			Error:         err.Error(),
+		})
+		return
+	}
+
+	u.playerRepository.AddPlayerMoneyRes(pctx, cfg, &payment.PaymentTransferRes{
 		TransactionId: transactionId.Hex(),
 		PlayerId:      req.PlayerId,
 		InventoryId:   "",

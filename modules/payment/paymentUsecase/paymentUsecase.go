@@ -233,8 +233,93 @@ func (u *paymentUsecase) BuyItem(pctx context.Context, cfg *config.Config, playe
 func (u *paymentUsecase) SellItem(pctx context.Context, cfg *config.Config, playerId string, req *payment.ItemServiceReq) ([]*payment.PaymentTransferRes, error) {
 	if err := u.FindeItemsInIds(pctx, cfg.Grpc.ItemUrl, req.Items); err != nil {
 		log.Printf("Error: find items in ids failed: %v", err.Error())
-		return nil, errors.New(err.Error())
+		return nil, errors.New("error: find items in ids failed")
 	}
 
-	return nil, nil
+	stage1 := make([]*payment.PaymentTransferRes, 0)
+	for _, item := range req.Items {
+		u.paymentRepository.RemovePlayerItem(pctx, cfg, &inventory.UpdateInventoryReq{
+			PlayerId: playerId,
+			ItemId:   item.ItemId,
+		})
+
+		resCh := make(chan *payment.PaymentTransferRes)
+
+		go u.TransactionConsumer(pctx, "sell", cfg, resCh)
+
+		res := <-resCh
+		if res != nil {
+			log.Printf("info: %v", res)
+			stage1 = append(stage1, &payment.PaymentTransferRes{
+				InventoryId:   "",
+				TransactionId: "",
+				PlayerId:      playerId,
+				ItemId:        item.ItemId,
+				Amount:        item.Price,
+				Error:         res.Error,
+			})
+		}
+	}
+
+	for _, v := range stage1 {
+		if v.Error != "" {
+			for _, v2 := range stage1 {
+				if v2.Error == "" {
+					u.paymentRepository.RollbackRemovePlayerItem(pctx, cfg, &inventory.RollbackInventoryReq{
+						PlayerId: playerId,
+						ItemId:   v2.ItemId,
+					})
+				}
+			}
+
+			return nil, errors.New(v.Error)
+		}
+	}
+
+	stage2 := make([]*payment.PaymentTransferRes, 0)
+	for _, s1 := range stage1 {
+		u.paymentRepository.AddPlayerMoney(pctx, cfg, &player.CreatePlayerTransactionReq{
+			PlayerId: playerId,
+			Amount:   s1.Amount * 0.8,
+		})
+
+		resCh := make(chan *payment.PaymentTransferRes)
+
+		go u.TransactionConsumer(pctx, "sell", cfg, resCh)
+
+		res := <-resCh
+		if res != nil {
+			log.Printf("info: %v", res)
+			stage2 = append(stage2, &payment.PaymentTransferRes{
+				InventoryId:   "",
+				TransactionId: s1.TransactionId,
+				PlayerId:      playerId,
+				ItemId:        s1.ItemId,
+				Amount:        s1.Amount,
+				Error:         s1.Error,
+			})
+		}
+	}
+
+	for _, v := range stage2 {
+		if v.Error != "" {
+			for _, s2 := range stage2 {
+				u.paymentRepository.RollbackTransaction(pctx, cfg, &player.RollbackPlayerTransactionReq{
+					TransactionId: s2.TransactionId,
+				})
+			}
+
+			for _, s2 := range stage2 {
+				if s2.Error == "" {
+					u.paymentRepository.RollbackRemovePlayerItem(pctx, cfg, &inventory.RollbackInventoryReq{
+						InventoryId: s2.InventoryId,
+					})
+				}
+			}
+
+			return nil, errors.New(v.Error)
+		}
+	}
+
+	return stage2, nil
 }

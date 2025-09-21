@@ -18,6 +18,7 @@ import (
 type PlayerQueueHandlerService interface {
 	DockedPlayerMoney()
 	RollbackPlayerTransaction()
+	AddPlayerMoney()
 }
 
 type playerQueueHandler struct {
@@ -85,6 +86,43 @@ func (h *playerQueueHandler) DockedPlayerMoney() {
 			}
 		case <-sigChan:
 			log.Println("Docked player money consumer stopped")
+			return
+		}
+	}
+}
+
+func (h *playerQueueHandler) AddPlayerMoney() {
+	ctx := context.Background()
+
+	consumer, err := h.PlayerConsumer(ctx)
+	if err != nil {
+		return
+	}
+	defer consumer.Close()
+
+	log.Println("Add player money consumer started")
+
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+
+	for {
+		select {
+		case err := <-consumer.Errors():
+			log.Printf("Error: add player money consumer failed: %v", err.Error())
+			continue
+		case msg := <-consumer.Messages():
+			if string(msg.Key) == "sell" {
+				h.playerUsecase.UpsertOffset(ctx, msg.Offset+1)
+				req := new(player.CreatePlayerTransactionReq)
+				if err := queue.DecodeMessage(req, msg.Value); err != nil {
+					continue
+				}
+
+				h.playerUsecase.AddPlayerMoneyRes(ctx, h.cfg, req)
+				log.Printf("info: docked player money: topic: %s, offset: %d, value: %s", msg.Topic, msg.Offset, string(msg.Value))
+			}
+		case <-sigChan:
+			log.Println("Add player money consumer stopped")
 			return
 		}
 	}
