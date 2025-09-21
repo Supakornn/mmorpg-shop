@@ -13,7 +13,6 @@ import (
 	"google.golang.org/grpc/metadata"
 
 	authPb "github.com/Supakornn/mmorpg-shop/modules/auth/authPb"
-	inventoryPb "github.com/Supakornn/mmorpg-shop/modules/inventory/inventoryPb"
 	itemPb "github.com/Supakornn/mmorpg-shop/modules/item/itemPb"
 	playerPb "github.com/Supakornn/mmorpg-shop/modules/player/playerPb"
 )
@@ -23,7 +22,6 @@ type (
 		Auth() authPb.AuthGrpcServiceClient
 		Player() playerPb.PlayerGrpcServiceClient
 		Item() itemPb.ItemGrpcServiceClient
-		Inventory() inventoryPb.InventoryGrpcServiceClient
 	}
 
 	grpcClientFactory struct {
@@ -74,10 +72,6 @@ func (g *grpcClientFactory) Player() playerPb.PlayerGrpcServiceClient {
 
 func (g *grpcClientFactory) Item() itemPb.ItemGrpcServiceClient {
 	return itemPb.NewItemGrpcServiceClient(g.client)
-}
-
-func (g *grpcClientFactory) Inventory() inventoryPb.InventoryGrpcServiceClient {
-	return inventoryPb.NewInventoryGrpcServiceClient(g.client)
 }
 
 func NewGrpcClient(host string) (GrpcClientFactoryHandler, error) {
