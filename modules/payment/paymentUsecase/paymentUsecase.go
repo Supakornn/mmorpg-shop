@@ -14,6 +14,7 @@ import (
 type (
 	PaymentUsecaseService interface {
 		FindeItemsInIds(pctx context.Context, grpcUrl string, req []*payment.ItemServiceReqDatum) error
+		GetOffset(pctx context.Context) (int64, error)
 	}
 
 	paymentUsecase struct {
@@ -68,4 +69,12 @@ func (u *paymentUsecase) FindeItemsInIds(pctx context.Context, grpcUrl string, r
 	}
 
 	return nil
+}
+
+func (u *paymentUsecase) GetOffset(pctx context.Context) (int64, error) {
+	return u.paymentRepository.GetOffset(pctx)
+}
+
+func (u *paymentUsecase) UpsertOffset(pctx context.Context, offset int64) error {
+	return u.paymentRepository.UpsertOffset(pctx, offset)
 }

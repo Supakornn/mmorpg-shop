@@ -6,6 +6,7 @@ import (
 	"log"
 	"time"
 
+	"github.com/Supakornn/mmorpg-shop/modules/models"
 	"github.com/Supakornn/mmorpg-shop/modules/player"
 	"github.com/Supakornn/mmorpg-shop/pkg/utils"
 	"go.mongodb.org/mongo-driver/v2/bson"
@@ -22,6 +23,8 @@ type (
 		GetPlayerSavingAccount(pctx context.Context, playerId string) (*player.PlayerSavingAccount, error)
 		FindOnePlayerCredential(pctx context.Context, email string) (*player.Player, error)
 		FindOnePlayerProfileToRefresh(pctx context.Context, playerId string) (*player.Player, error)
+		GetOffset(pctx context.Context) (int64, error)
+		UpsertOffset(pctx context.Context, offset int64) error
 	}
 
 	playerRepository struct {
@@ -205,4 +208,38 @@ func (r *playerRepository) FindOnePlayerProfileToRefresh(pctx context.Context, p
 	}
 
 	return result, nil
+}
+
+func (r *playerRepository) GetOffset(pctx context.Context) (int64, error) {
+	ctx, cancel := context.WithTimeout(pctx, 10*time.Second)
+	defer cancel()
+
+	db := r.playerDbConn(ctx)
+	col := db.Collection("player_transactions_queue")
+
+	result := new(models.KafkaOffset)
+	if err := col.FindOne(ctx, bson.M{}).Decode(result); err != nil {
+		log.Printf("error: get offset failed: %v", err.Error())
+		return -1, errors.New("error: get offset failed")
+	}
+
+	return result.Offset, nil
+}
+
+func (r *playerRepository) UpsertOffset(pctx context.Context, offset int64) error {
+	ctx, cancel := context.WithTimeout(pctx, 10*time.Second)
+	defer cancel()
+
+	db := r.playerDbConn(ctx)
+	col := db.Collection("player_transactions_queue")
+
+	result, err := col.UpdateOne(ctx, bson.M{}, bson.M{"$set": bson.M{"offset": offset}}, options.UpdateOne().SetUpsert(true))
+	if err != nil {
+		log.Printf("error: upsert offset failed: %v", err.Error())
+		return errors.New("error: upsert offset failed")
+	}
+
+	log.Printf("info: upsert offset: %v", result.ModifiedCount)
+
+	return nil
 }
