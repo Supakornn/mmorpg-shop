@@ -53,35 +53,35 @@ func (u *inventoryUsecase) FindPlayerItems(pctx context.Context, cfg *config.Con
 	itemData, err := u.inventoryRepository.FindItemsInIds(pctx, cfg.Grpc.ItemUrl, &itemPb.FindItemsInIdsReq{
 		Ids: func() []string {
 			itemsIds := make([]string, 0)
-			for _, data := range inventoryData {
-				itemsIds = append(itemsIds, data.ItemId)
+			for _, v := range inventoryData {
+				itemsIds = append(itemsIds, v.ItemId)
 			}
 			return itemsIds
 		}(),
 	})
 
 	itemMaps := make(map[string]*item.ItemShowCase)
-	for _, data := range itemData.Items {
-		itemMaps[data.Id] = &item.ItemShowCase{
-			ItemId:   data.Id,
-			Title:    data.Title,
-			Price:    data.Price,
-			ImageUrl: data.ImageUrl,
-			Damage:   int(data.Damage),
+	for _, v := range itemData.Items {
+		itemMaps[v.Id] = &item.ItemShowCase{
+			ItemId:   v.Id,
+			Title:    v.Title,
+			Price:    v.Price,
+			ImageUrl: v.ImageUrl,
+			Damage:   int(v.Damage),
 		}
 	}
 
 	results := make([]*inventory.ItemInInventory, 0)
-	for _, data := range inventoryData {
+	for _, v := range inventoryData {
 		results = append(results, &inventory.ItemInInventory{
-			InventoryId: data.Id.Hex(),
-			PlayerId:    data.PlayerId,
+			InventoryId: v.Id.Hex(),
+			PlayerId:    v.PlayerId,
 			ItemShowCase: &item.ItemShowCase{
-				ItemId:   data.ItemId,
-				Title:    itemMaps[data.ItemId].Title,
-				Price:    itemMaps[data.ItemId].Price,
-				ImageUrl: itemMaps[data.ItemId].ImageUrl,
-				Damage:   itemMaps[data.ItemId].Damage,
+				ItemId:   v.ItemId,
+				Title:    itemMaps[v.ItemId].Title,
+				Price:    itemMaps[v.ItemId].Price,
+				ImageUrl: itemMaps[v.ItemId].ImageUrl,
+				Damage:   itemMaps[v.ItemId].Damage,
 			},
 		})
 	}
